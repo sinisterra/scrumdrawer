@@ -6,11 +6,11 @@ let inputToMemberList = (i: string): list(member) => {
   |> Array.to_list
   |> List.filter(f => f != "")
   |> List.map(elem => {
-       let splitByComma = Js_string.split(",", elem) |> Array.to_list;
+       let splitByComma = Js_string.split(",", elem);
        switch (splitByComma) {
-       | [name, team] when team != "" => Some({name, team: Some(team)})
-       | [name] => Some({name, team: None})
-       | [name, team] when team == "" => Some({name, team: None})
+       | [|name, team|] when team != "" => Some({name, team: Some(team)})
+       | [|name|] => Some({name, team: None})
+       | [|name, team|] when team == "" => Some({name, team: None})
        | _ => None
        };
      })
@@ -61,104 +61,76 @@ let randomDraw = (pastSpeakers: list(participation), members: list(member)) => {
   };
 };
 
+let array_filter = (fn, a) =>
+  a |> Array.to_list |> List.filter(fn) |> Array.of_list;
+
 let byTeamDraw = (pastSpeakers, members) => {
-  let memberCount: float = List.length(members) |> float_of_int;
   let dueSpeakers = findDueSpeakers(pastSpeakers, members);
 
-  // group due speakers by team
+  // build a map with dueSpeakers where the keys are the teams and the values are lists of members belonging to such teams
+
   let dueSpeakersByTeam =
     dueSpeakers
     |> List.fold_left(
-         (acc, speaker) => {
-           let teamName = speaker.team |> Belt.Option.getWithDefault(_, "");
-
-           let teamList =
-             teamName
-             |> Js.Dict.get(acc)
-             |> Belt.Option.getWithDefault(_, [])
-             |> List.append([speaker]);
-
-           Js.Dict.set(acc, teamName, teamList);
-
-           acc;
+         (acc, member) => {
+           let teamName =
+             Belt.Option.getWithDefault(member.team, "__noteam__");
+           let teamList = Belt.Map.String.getWithDefault(acc, teamName, []);
+           Belt.Map.String.set(acc, teamName, teamList @ [member]);
          },
-         Js.Dict.empty(),
+         Belt.Map.String.empty,
        );
 
-  let teams = Js.Dict.keys(dueSpeakersByTeam);
-
-  let maxBounds: array(float) =
-    teams
-    |> Array.map(team =>
-         team
-         |> Js.Dict.get(dueSpeakersByTeam)
-         |> Belt.Option.getWithDefault(_, [])
-         |> List.length
-         |> float_of_int
-         |> (v => v /. memberCount)
-       );
-
-  let bounds =
-    teams
-    // transform to an immutable list
-    |> Array.to_list
-    // zip teams with max bounds, creating tuples
-    |> List.mapi((i, team) => (team, maxBounds[i]))
-    // sort list by second tuple parameter (bounds)
-    |> List.sort(((_, b1), (_, b2)) => compare(b1, b2))
-    // turn back to an Array (because n - 1 access is required later)
-    |> Array.of_list
-    // zip with index, creating tuples (value, index)
-    |> Array.mapi((i, v) => (v, i))
-    // accumulate the list creating an upper bound and lower bound
-    |> Array.fold_left(
-         (acc, ((team, bound), i)) =>
-           if (i == 0) {
-             Array.append(acc, [|(team, 0.0, bound)|]);
-           } else {
-             let (_, _, lowerBound) = acc[i - 1];
-             Array.append(acc, [|(team, lowerBound, bound +. lowerBound)|]);
-           },
-         [||],
+  let dueSpeakerFrequencies =
+    dueSpeakersByTeam
+    |> Belt.Map.String.map(_, l =>
+         float_of_int(List.length(l))
+         /. float_of_int(List.length(dueSpeakers))
        )
-    // convert to List because filtering is required
+    |> Belt.Map.String.toArray
     |> Array.to_list
-    // filter out all values where upper bound is zero (empty teams)
-    |> List.filter(((_, _, upperBound)) => upperBound > 0.0);
+    |> List.filter(((_, v1)) => v1 > 0.0)
+    |> List.sort(((_, v1), (_, v2)) => compare(v2, v1));
 
-  // get a number between [0,1]
+  let speakerRoulette =
+    dueSpeakerFrequencies
+    |> List.mapi((i, v) => (v, i))
+    |> List.fold_left(
+         (acc, ((team, prob), i)) =>
+           if (i == 0) {
+             acc @ [(team, 1.0 -. prob, 1.0)];
+           } else {
+             let (_, lower, _) = Array.of_list(acc)[i - 1];
+             acc @ [(team, Utils.clamp(0.0, 1.0, lower -. prob), lower)];
+           },
+         [],
+       );
+
   let rnd = Js.Math.random();
 
-  // find the range where randomNumber lives
-
-  // select that team
-  let selectedTeamName =
+  (
     switch (
-      List.find(((_, lower, upper)) => lower >= rnd && rnd <= upper, bounds)
+      List.find(
+        ((_, lower, upper)) => rnd >= lower && rnd <= upper,
+        speakerRoulette,
+      )
     ) {
-    | (team, _, _) =>
-      Js.log(team);
-      Some(team);
+    | (team, _, _) => Some(team)
     | exception _ => None
-    };
+    }
+  )
+  |> Belt.Option.map(
+       _,
+       t => {
+         let ts =
+           Belt.Map.String.getWithDefault(dueSpeakersByTeam, t, [])
+           |> Array.of_list;
+         let randomIndex = Js.Math.random_int(0, ts |> Array.length);
 
-  Js.log((rnd, Array.of_list(bounds), selectedTeamName));
-
-  // get the array of the team, pick a member randomly
-
-  switch (selectedTeamName) {
-  | Some(team) =>
-    let remainingTeamMembers =
-      team
-      |> Js.Dict.get(dueSpeakersByTeam)
-      |> Belt.Option.getWithDefault(_, [])
-      |> Array.of_list;
-    let remainingTeamsLength = Array.length(remainingTeamMembers);
-
-    let randomIndex = Js.Math.random_int(0, remainingTeamsLength);
-    Some(remainingTeamMembers[randomIndex]);
-  | None => None
-  };
+         Some(ts[randomIndex]);
+       },
+     )
+  |> Belt.Option.getWithDefault(_, None);
 };
 
 [@react.component]
