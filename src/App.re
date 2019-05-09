@@ -39,6 +39,7 @@ let make = () => {
         <MemberInput onMemberInputChange />
       </aside>
       <section className="App__sections">
+        <AppBar />
         <CurrentSpeaker currentSpeaker />
         <PastSpeakers pastSpeakers=mms />
       </section>

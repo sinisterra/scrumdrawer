@@ -10,8 +10,9 @@ h1 {
 
 .App__sections {
   display: grid;
-  grid-template-rows: 2fr 1fr;
+  grid-template-rows: min-content 2fr 1fr;
   height: 100vh;
+  background-color: #f0f0f0;
 }
 
 .App__aside {
@@ -30,4 +31,19 @@ h1 {
 
 .MemberInput {
   height: 100vh;
+}
+
+.AppBar {
+  height: 48px;
+  background-color: #ddd;
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  justify-content: space-between;
+  border-bottom: 1px solid black;
+}
+
+.AppBar__title {
+  font-weight: 500;
+  font-size: 18px;
 }
