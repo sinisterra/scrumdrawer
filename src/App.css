@@ -1,0 +1,21 @@
+h1 {
+  font-size: 48px;
+}
+
+.App__main {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 4fr;
+  height: 100vh;
+}
+
+.App__sections {
+  display: grid;
+}
+
+.App__aside {
+  border-right: 1px solid black;
+}
+
+.MemberInput__textarea {
+  height: 100vh;
+}
