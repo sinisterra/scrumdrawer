@@ -1,4 +1,3 @@
-open Utils;
 open Dsl;
 
 let inputToMemberList = (i: string): list(member) => {
@@ -7,8 +6,6 @@ let inputToMemberList = (i: string): list(member) => {
   |> List.filter(f => f != "")
   |> List.map(elem => {
        let splitByComma = Js_string.split(",", elem) |> Array.to_list;
-       Js.log(splitByComma);
-
        switch (splitByComma) {
        | [name, team] when team != "" => Some({name, team: Some(team)})
        | [name] => Some({name, team: None})
@@ -28,13 +25,12 @@ let inputToMemberList = (i: string): list(member) => {
 
 [@react.component]
 let make = () => {
-  let (memberList: list(member), setMemberList) = React.useState(() => []);
+  let (mms: list(member), setMemberList) = React.useState(() => []);
+  let (pastSpeakers: list(member), _) = React.useState(() => []);
+  let (currentSpeaker: option(member), _) = React.useState(() => None);
 
   let onMemberInputChange = value => {
-    Js.log(value);
-    let s = inputToMemberList(value);
-    setMemberList(_ => s);
-    Js.log(s);
+    setMemberList(_ => inputToMemberList(value));
   };
 
   <>
@@ -42,7 +38,10 @@ let make = () => {
       <aside className="App__aside">
         <MemberInput onMemberInputChange />
       </aside>
-      <section className="App__sections"> {"Panel principal" |> str} </section>
+      <section className="App__sections">
+        <CurrentSpeaker currentSpeaker />
+        <PastSpeakers pastSpeakers=mms />
+      </section>
     </main>
   </>;
 };

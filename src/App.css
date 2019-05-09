@@ -10,6 +10,8 @@ h1 {
 
 .App__sections {
   display: grid;
+  grid-template-rows: 2fr 1fr;
+  height: 100vh;
 }
 
 .App__aside {
@@ -17,5 +19,15 @@ h1 {
 }
 
 .MemberInput__textarea {
+  height: 100vh;
+}
+
+.CurrentSpeaker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.MemberInput {
   height: 100vh;
 }
