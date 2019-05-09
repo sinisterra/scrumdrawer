@@ -47,3 +47,11 @@ h1 {
   font-weight: 500;
   font-size: 18px;
 }
+
+.PastSpeakers__list__item--present {
+  font-weight: 600;
+}
+
+.PastSpeakers__list__item--skipped {
+  text-decoration: line-through;
+}
