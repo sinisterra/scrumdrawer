@@ -167,7 +167,8 @@ let make = () => {
     React.useState(() => []);
   let (currentSpeaker: option(member), setCurrentSpeaker) =
     React.useState(() => None);
-  let (drawStrategy: drawStrategy, _) = React.useState(() => ByTeam);
+  let (drawStrategy: drawStrategy, setDrawStrategy) =
+    React.useState(() => ByTeam);
 
   let onSpeakerFinish = status => {
     // assign the received status to the player, add the speaker to the end
@@ -209,23 +210,67 @@ let make = () => {
     callNextPerson(Present);
   };
 
+  let restart = _e => {
+    setPastSpeakers(_ => []);
+    setCurrentSpeaker(_ => None);
+  };
+
+  let finish = _e => {
+    let nextPastSpeakers = onSpeakerFinish(Present);
+
+    setPastSpeakers(_ => nextPastSpeakers);
+    setCurrentSpeaker(_ => None);
+  };
+
+  let onDrawStrategyChange = (ds: drawStrategy) => setDrawStrategy(_ => ds);
+
+  let noMoreDueSpeakers =
+    0 == List.length(findDueSpeakers(pastSpeakers, members));
+
   <>
     <main className="App__main">
       <aside className="App__aside">
         <MemberInput onMemberInputChange />
       </aside>
       <section className="App__sections">
-        <AppBar />
-        <CurrentSpeaker currentSpeaker />
-        <PastSpeakers pastSpeakers />
-        <div className="SpeakerButtons">
-          <button className="bx--btn bx--btn--ghost" onClick=skipCurrentPerson>
-            {"Skip person" |> str}
-          </button>
-          <button className="bx--btn bx--btn--primary" onClick=pickSomeone>
-            {"Pick someone" |> str}
-          </button>
-        </div>
+        <AppBar
+          left={<SelectDrawStrategy drawStrategy onDrawStrategyChange />}
+          right={
+            <div className="AppBar__btns">
+              <button className="bx--btn bx--btn--ghost" onClick=restart>
+                {"Restart" |> str}
+              </button>
+              <button className="bx--btn bx--btn--primary" onClick=finish>
+                {"Finish" |> str}
+              </button>
+            </div>
+          }
+        />
+        <section className="App__speaker">
+          <CurrentSpeaker
+            currentSpeaker
+            buttons={
+              <div className="SpeakerButtons">
+                <button
+                  className="bx--btn bx--btn--ghost"
+                  onClick=skipCurrentPerson
+                  disabled=noMoreDueSpeakers>
+                  {"Skip person" |> str}
+                </button>
+                <button
+                  className="bx--btn bx--btn--primary"
+                  onClick=pickSomeone
+                  disabled=noMoreDueSpeakers>
+                  {"Pick someone" |> str}
+                </button>
+              </div>
+            }
+          />
+          <PastSpeakers
+            pastSpeakers
+            memberCount={<MemberCount pastSpeakers currentSpeaker />}
+          />
+        </section>
       </section>
     </main>
   </>;

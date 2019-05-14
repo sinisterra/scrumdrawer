@@ -2,7 +2,7 @@ open Utils;
 open Dsl;
 
 [@react.component]
-let make = (~currentSpeaker: option(member)) => {
+let make = (~currentSpeaker: option(member), ~buttons) => {
   let memberName =
     switch (currentSpeaker) {
     | Some({name}) => name
@@ -10,6 +10,9 @@ let make = (~currentSpeaker: option(member)) => {
     };
 
   <section className="CurrentSpeaker">
-    <h1> {memberName |> str} </h1>
+    <div className="CurrentSpeaker__name">
+      <h1> {memberName |> str} </h1>
+    </div>
+    buttons
   </section>;
 };

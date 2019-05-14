@@ -2,8 +2,7 @@ open Utils;
 
 [@react.component]
 let make = (~onMemberInputChange) => {
-  let (memberInput, setMemberInput) =
-    React.useState(() => "a,1\nb,2\nc,3\nd,1\ne\nf\n");
+  let (memberInput, setMemberInput) = React.useState(() => "");
 
   React.useEffect1(
     () => {
